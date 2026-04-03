@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Reading Speed Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #cccccc;
+            font-size: 0.9em;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-section label {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ff8c42;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            border: 2px solid #ff8c42;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-size: 0.95em;
+            color: #ff8c42;
+            font-weight: bold;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #ff6b35, #ff8c42);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff8c42;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(255, 140, 66, 0.7);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff8c42;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 5px rgba(255, 140, 66, 0.7);
+        }
+
+        .wpm-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: bold;
+            color: #ff8c42;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background-color: #444;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch.active {
+            background-color: #ff8c42;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background-color: #ff6b35;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background-color: #ff8c42;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-start:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-pause {
+            background-color: #ffb703;
+            color: #1a1a1a;
+        }
+
+        .btn-pause:hover {
+            background-color: #ffc914;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 183, 3, 0.4);
+        }
+
+        .btn-pause:disabled {
+            background-color: #666;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-resume {
+            background-color: #02d81d;
+            color: #1a1a1a;
+        }
+
+        .btn-resume:hover {
+            background-color: #1ee52e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(2, 216, 29, 0.4);
+        }
+
+        .btn-resume:disabled {
+            background-color: #666;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-reset {
+            background-color: #8f8f8f;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #aaaaaa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(143, 143, 143, 0.4);
+        }
+
+        .display-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            background-color: #0a0a0a;
+            border: 2px solid #ff8c42;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .display-area.hidden {
+            display: none;
+        }
+
+        .word-display {
+            text-align: center;
+            font-size: 4em;
+            font-weight: bold;
+            letter-spacing: 5px;
+            height: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 300px;
+        }
+
+        .orp-letter {
+            color: #ff6b35;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255, 107, 53, 0.8);
+        }
+
+        .stats {
+            text-align: center;
+            color: #aaaaaa;
+            font-size: 0.9em;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 5px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stat-label {
+            color: #ff8c42;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .stat-value {
+            color: #ffffff;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .info-message {
+            text-align: center;
+            color: #aaaaaa;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .word-display {
+                font-size: 2.5em;
+            }
+
+            .controls-section {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RSVP Speed Reader</h1>
+            <p>Rapid Serial Visual Presentation Training Tool</p>
+        </div>
+
+        <div class="input-section">
+            <label for="textInput">Paste your text here:</label>
+            <textarea id="textInput" placeholder="Enter or paste any text to begin training..."></textarea>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <label for="wpmSlider">Words Per Minute (WPM)</label>
+                <div class="slider-container">
+                    <input type="range" id="wpmSlider" min="50" max="1000" value="250" step="10">
+                    <span class="wpm-display" id="wpmDisplay">250</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Training Mode (Auto +25 WPM every 30s)</label>
+                <div class="toggle-group">
+                    <div class="toggle-switch" id="trainingToggle"></div>
+                    <span id="trainingStatus">OFF</span>
+                </div>
+            </div>
+
+            <div class="button-group" style="grid-column: 1 / -1;">
+                <button class="btn-start" id="startBtn">Start</button>
+                <button class="btn-pause" id="pauseBtn" disabled>Pause</button>
+                <button class="btn-resume" id="resumeBtn" disabled>Resume</button>
+                <button class="btn-reset" id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="display-area hidden" id="displayArea">
+            <div class="word-display" id="wordDisplay"></div>
+        </div>
+
+        <div class="info-message" id="infoMessage">
+            Enter text above and click "Start" to begin training.
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-item">
+                <span class="stat-label">Words Read</span>
+                <span class="stat-value" id="wordsRead">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Time Elapsed</span>
+                <span class="stat-value" id="timeElapsed">0:00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Current WPM</span>
+                <span class="stat-value" id="currentWPM">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE MANAGEMENT ====================
+        const state = {
+            words: [],
+            currentIndex: 0,
+            isPlaying: false,
+            isPaused: false,
+            wpm: 250,
+            trainingMode: false,
+            trainingModeStartTime: null,
+            playStartTime: null,
+            pausedTime: 0,
+            wordsRead: 0,
+            currentTimeout: null,
+            wordsReadAtStartOfSession: 0
+        };
+
+        // ==================== DOM ELEMENTS ====================
+        const textInput = document.getElementById('textInput');
+        const wpmSlider = document.getElementById('wpmSlider');
+        const wpmDisplay = document.getElementById('wpmDisplay');
+        const trainingToggle = document.getElementById('trainingToggle');
+        const trainingStatus = document.getElementById('trainingStatus');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const displayArea = document.getElementById('displayArea');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const infoMessage = document.getElementById('infoMessage');
+        const wordsReadSpan = document.getElementById('wordsRead');
+        const timeElapsedSpan = document.getElementById('timeElapsed');
+        const currentWPMSpan = document.getElementById('currentWPM');
+
+        // ==================== UTILITY FUNCTIONS ====================
+
+        /**
+         * Determines the ORP (Optimal Recognition Point) index based on word length
+         * ORP is the character position that should be fixed on screen
+         */
+        function getORPIndex(wordLength) {
+            if (wordLength <= 3) {
+                // Short words: middle letter
+                return Math.floor(wordLength / 2);
+            } else if (wordLength <= 7) {
+                // Medium words: slightly left of center
+                return Math.floor(wordLength / 2) - 1;
+            } else {
+                // Long words: center-left
+                return Math.floor(wordLength / 3);
+            }
+        }
+
+        /**
+         * Adds padding/spacing before a word so the ORP letter aligns at fixed position
+         * This ensures consistent eye position regardless of word length
+         */
+        function alignWordToORP(word) {
+            const orpIndex = getORPIndex(word.length);
+            const paddingNeeded = 15 - orpIndex; // 15 is the fixed screen position
+            const padding = '&nbsp;'.repeat(Math.max(0, paddingNeeded));
+            
+            let html = padding;
+            for (let i = 0; i < word.length; i++) {
+                if (i === orpIndex) {
+                    html += `<span class="orp-letter">${word[i]}</span>`;
+                } else {
+                    html += word[i];
+                }
+            }
+            return html;
+        }
+
+        /**
+         * Splits text into words while preserving punctuation
+         * Returns array of word objects with text and punctuation info
+         */
+        function parseText(text) {
+            const words = [];
+            const regex = /(\S+)/g;
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                const word = match[1];
+                
+                // Extract word and trailing punctuation
+                const punctuationMatch = word.match(/^(.+?)([,.!?;:—]*)?$/);
+                if (punctuationMatch) {
+                    const cleanWord = punctuationMatch[1];
+                    const punctuation = punctuationMatch[2] || '';
+                    
+                    words.push({
+                        text: cleanWord,
+                        punctuation: punctuation
+                    });
+                }
+            }
+
+            return words;
+        }
+
+        /**
+         * Calculates delay after a word based on punctuation
+         * Follows reading comprehension guidelines
+         */
+        function getPunctuationDelay(punctuation) {
+            if (!punctuation) return 0;
+            
+            if (punctuation.includes('.') || punctuation.includes('!') || punctuation.includes('?')) {
+                return 300; // Long pause at sentence end
+            } else if (punctuation.includes(',') || punctuation.includes(';')) {
+                return 100; // Short pause at comma/semicolon
+            }
+            return 0;
+        }
+
+        /**
+         * Converts milliseconds to MM:SS format
+         */
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * Calculates current effective WPM based on training mode
+         */
+        function getCurrentWPM() {
+            if (!state.trainingMode || !state.trainingModeStartTime) {
+                return state.wpm;
+            }
+
+            const elapsed = Date.now() - state.trainingModeStartTime;
+            const intervalsOf30s = Math.floor(elapsed / 30000);
+            return state.wpm + (intervalsOf30s * 25);
+        }
+
+        /**
+         * Calculates word display duration in milliseconds
+         */
+        function getWordDuration(word) {
+            const currentWPM = getCurrentWPM();
+            const baseDuration = (60000 / currentWPM); // ms per word
+            const punctuationDelay = getPunctuationDelay(word.punctuation);
+            return baseDuration + punctuationDelay;
+        }
+
+        /**
+         * Updates the statistics display
+         */
+        function updateStats() {
+            wordsReadSpan.textContent = state.wordsRead;
+            
+            if (state.playStartTime) {
+                const elapsed = Date.now() - state.playStartTime - state.pausedTime;
+                timeElapsedSpan.textContent = formatTime(elapsed);
+                
+                if (state.wordsRead > 0) {
+                    const effectiveWPM = Math.round((state.wordsRead / elapsed) * 60000);
+                    currentWPMSpan.textContent = effectiveWPM;
+                }
+            }
+        }
+
+        // ==================== MAIN PLAYBACK LOGIC ====================
+
+        /**
+         * Displays the next word and schedules the next display
+         */
+        function displayNextWord() {
+            if (state.currentIndex >= state.words.length) {
+                endSession();
+                return;
+            }
+
+            const word = state.words[state.currentIndex];
+            wordDisplay.innerHTML = alignWordToORP(word.text);
+            
+            state.wordsRead++;
+            const duration = getWordDuration(word);
+
+            // Schedule next word
+            state.currentTimeout = setTimeout(() => {
+                state.currentIndex++;
+                displayNextWord();
+            }, duration);
+
+            updateStats();
+        }
+
+        /**
+         * Starts a new reading session
+         */
+        function startSession() {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('Please enter some text to begin!');
+                return;
+            }
+
+            state.words = parseText(text);
+            if (state.words.length === 0) {
+                alert('No words found in text!');
+                return;
+            }
+
+            state.currentIndex = 0;
+            state.isPlaying = true;
+            state.isPaused = false;
+            state.playStartTime = Date.now();
+            state.pausedTime = 0;
+            state.wordsRead = 0;
+            state.wordsReadAtStartOfSession = 0;
+
+            if (state.trainingMode) {
+                state.trainingModeStartTime = Date.now();
+            }
+
+            displayArea.classList.remove('hidden');
+            infoMessage.style.display = 'none';
+            textInput.disabled = true;
+            wpmSlider.disabled = true;
+            trainingToggle.style.pointerEvents = 'none';
+            trainingToggle.style.opacity = '0.5';
+
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            resumeBtn.disabled = true;
+
+            displayNextWord();
+        }
+
+        /**
+         * Pauses the current session
+         */
+        function pauseSession() {
+            if (!state.isPlaying) return;
+
+            state.isPlaying = false;
+            state.isPaused = true;
+
+            if (state.currentTimeout) {
+                clearTimeout(state.currentTimeout);
+                state.currentTimeout = null;
+            }
+
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = false;
+            startBtn.disabled = true;
+        }
+
+        /**
+         * Resumes a paused session
+         */
+        function resumeSession() {
+            if (!state.isPaused) return;
+
+            const pauseStart = Date.now();
+            state.isPaused = false;
+            state.isPlaying = true;
+
+            pauseBtn.disabled = false;
+            resumeBtn.disabled = true;
+
+            // Continue with next word
+            state.currentIndex++;
+            displayNextWord();
+
+            // Adjust timing for pause duration
+            state.pausedTime += Date.now() - pauseStart;
+        }
+
+        /**
+         * Resets the session and clears display
+         */
+        function resetSession() {
+            state.currentIndex = 0;
+            state.isPlaying = false;
+            state.isPaused = false;
+            state.wordsRead = 0;
+            state.playStartTime = null;
+            state.pausedTime = 0;
+            state.trainingModeStartTime = null;
+
+            if (state.currentTimeout) {
+                clearTimeout(state.currentTimeout);
+                state.currentTimeout = null;
+            }
+
+            displayArea.classList.add('hidden');
+            infoMessage.style.display = 'block';
+            textInput.disabled = false;
+            wpmSlider.disabled = false;
+            trainingToggle.style.pointerEvents = 'auto';
+            trainingToggle.style.opacity = '1';
+
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = true;
+
+            wordsReadSpan.textContent = '0';
+            timeElapsedSpan.textContent = '0:00';
+            currentWPMSpan.textContent = '0';
+        }
+
+        /**
+         * Ends the session when all words are read
+         */
+        function endSession() {
+            state.isPlaying = false;
+            state.isPaused = false;
+
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = true;
+            startBtn.disabled = false;
+
+            infoMessage.textContent = `✓ Session Complete! You read ${state.wordsRead} words.`;
+            infoMessage.style.display = 'block';
+
+            textInput.disabled = false;
+            wpmSlider.disabled = false;
+            trainingToggle.style.pointerEvents = 'auto';
+            trainingToggle.style.opacity = '1';
+        }
+
+        // ==================== EVENT LISTENERS ====================
+
+        startBtn.addEventListener('click', startSession);
+        pauseBtn.addEventListener('click', pauseSession);
+        resumeBtn.addEventListener('click', resumeSession);
+        resetBtn.addEventListener('click', resetSession);
+
+        wpmSlider.addEventListener('input', (e) => {
+            state.wpm = parseInt(e.target.value);
+            wpmDisplay.textContent = state.wpm;
+        });
+
+        trainingToggle.addEventListener('click', () => {
+            state.trainingMode = !state.trainingMode;
+            trainingToggle.classList.toggle('active');
+            trainingStatus.textContent = state.trainingMode ? 'ON' : 'OFF';
+        });
+
+        // Update stats every 100ms for smooth real-time display
+        setInterval(() => {
+            if (state.isPlaying) {
+                updateStats();
+            }
+        }, 100);
+
+        // Allow Enter key in textarea
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                startSession();
+            }
+        });
+    </script>
+</body>
+</html>
