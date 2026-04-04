@@ -24,6 +24,7 @@ interface UseRSVPReturn {
   resume: () => void
   reset: () => void
   setWPM: (wpm: number) => void
+  seekTo: (index: number) => void
 }
 
 export function useRSVP({ words, initialIndex = 0, initialWPM = 300 }: UseRSVPOptions): UseRSVPReturn {
@@ -93,6 +94,14 @@ export function useRSVP({ words, initialIndex = 0, initialWPM = 300 }: UseRSVPOp
     }
   }, [isPlaying, wordIndex, startTimer])
 
+  const seekTo = useCallback((index: number) => {
+    const clamped = Math.max(0, Math.min(index, words.length - 1))
+    clearTimer()
+    setIsPlaying(false)
+    setIsComplete(false)
+    setWordIndex(clamped)
+  }, [words.length, clearTimer])
+
   return {
     currentWord: words[wordIndex] ?? '',
     wordIndex,
@@ -103,6 +112,7 @@ export function useRSVP({ words, initialIndex = 0, initialWPM = 300 }: UseRSVPOp
     pause,
     resume,
     reset,
-    setWPM
+    setWPM,
+    seekTo
   }
 }

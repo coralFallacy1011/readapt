@@ -6,6 +6,8 @@ import authRouter from './routes/auth'
 import booksRouter from './routes/books'
 import sessionRouter from './routes/session'
 import analyticsRouter from './routes/analytics'
+import socialRouter from './routes/social'
+import publicRouter from './routes/public'
 
 dotenv.config()
 
@@ -38,6 +40,8 @@ app.use('/api/auth', authRouter)
 app.use('/api/books', booksRouter)
 app.use('/api/session', sessionRouter)
 app.use('/api/analytics', analyticsRouter)
+app.use('/api/social', socialRouter)
+app.use('/api/public', publicRouter)
 
 // 404 fallback
 app.use((_req, res) => {
