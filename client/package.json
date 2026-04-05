@@ -10,6 +10,8 @@
     "test": "vitest --run"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.6.0",
     "pdfjs-dist": "^4.4.168",
     "react": "^18.2.0",
