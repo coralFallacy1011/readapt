@@ -105,17 +105,17 @@ export default function PDFViewer({ pdfUrl, currentPage, totalPages }: PDFViewer
 
   if (loading) {
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#111' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: 'var(--bg-surface)' }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: '28px', height: '28px', border: '3px solid #374151', borderTopColor: '#f97316', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>Loading PDF...</p>
+        <div style={{ width: '28px', height: '28px', border: '3px solid var(--border)', borderTopColor: '#f97316', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading PDF...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center', background: '#111' }}>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center', background: 'var(--bg-surface)' }}>
         <div>
           <p style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📄</p>
           <p style={{ color: '#ef4444', fontSize: '0.8rem', lineHeight: 1.6 }}>{error}</p>
@@ -125,21 +125,21 @@ export default function PDFViewer({ pdfUrl, currentPage, totalPages }: PDFViewer
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#111', overflow: 'hidden' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', overflow: 'hidden' }}>
       {/* Page indicator bar */}
       <div style={{
         padding: '0.3rem 1rem',
-        background: 'rgba(0,0,0,0.5)',
+        background: 'var(--bg-elevated)',
         display: 'flex', justifyContent: 'center',
         flexShrink: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid var(--border)',
       }}>
-        <span style={{ color: '#4b5563', fontSize: '0.65rem' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
           Page {currentPage} of {totalPages}
         </span>
       </div>
 
-      {/* Canvas container — fills all remaining height, centers the page */}
+      {/* Canvas container */}
       <div
         ref={containerRef}
         style={{
@@ -149,16 +149,15 @@ export default function PDFViewer({ pdfUrl, currentPage, totalPages }: PDFViewer
           justifyContent: 'center',
           overflow: 'hidden',
           padding: '8px',
-          background: '#1a1a1a',
+          background: 'var(--bg-elevated)',
         }}
       >
         <canvas
           ref={canvasRef}
           style={{
             display: 'block',
-            boxShadow: '0 4px 32px rgba(0,0,0,0.8)',
+            boxShadow: '0 4px 32px rgba(0,0,0,0.15)',
             borderRadius: '2px',
-            // Ensure canvas never overflows its container
             maxWidth: '100%',
             maxHeight: '100%',
           }}

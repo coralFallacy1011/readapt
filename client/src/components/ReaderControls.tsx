@@ -12,61 +12,29 @@ interface ReaderControlsProps {
 }
 
 export default function ReaderControls({
-  isPlaying,
-  isComplete,
-  wpm,
-  wordIndex,
-  totalWords,
-  onStart,
-  onPause,
-  onResume,
-  onReset,
-  onWPMChange
+  isPlaying, isComplete, wpm, wordIndex, totalWords,
+  onStart, onPause, onResume, onReset, onWPMChange
 }: ReaderControlsProps) {
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-lg">
-      {/* Progress */}
-      <p className="text-gray-500 text-sm">
-        {wordIndex + 1} / {totalWords} words
-      </p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', width: '100%', maxWidth: '480px' }}>
 
       {/* Playback buttons */}
-      <div className="flex gap-3">
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
         {!isPlaying && !isComplete && wordIndex === 0 && (
-          <button
-            onClick={onStart}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            Start
-          </button>
+          <button onClick={onStart} className="btn-accent">Start</button>
         )}
         {isPlaying && (
-          <button
-            onClick={onPause}
-            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            Pause
-          </button>
+          <button onClick={onPause} className="btn-ghost">Pause</button>
         )}
         {!isPlaying && !isComplete && wordIndex > 0 && (
-          <button
-            onClick={onResume}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            Resume
-          </button>
+          <button onClick={onResume} className="btn-accent">Resume</button>
         )}
-        <button
-          onClick={onReset}
-          className="bg-transparent border border-gray-700 hover:bg-gray-800 text-gray-300 font-semibold px-6 py-2 rounded-lg transition-colors"
-        >
-          Reset
-        </button>
+        <button onClick={onReset} className="btn-ghost">Reset</button>
       </div>
 
       {/* WPM slider */}
-      <div className="flex flex-col items-center gap-2 w-full">
-        <label className="text-gray-400 text-sm">{wpm} WPM</label>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+        <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{wpm} WPM</label>
         <input
           type="range"
           min={100}
@@ -74,17 +42,17 @@ export default function ReaderControls({
           step={10}
           value={wpm}
           onChange={e => onWPMChange(Number(e.target.value))}
-          className="w-full accent-orange-500"
+          style={{ width: '100%', accentColor: '#f97316' }}
           aria-label="Words per minute"
         />
-        <div className="flex justify-between w-full text-xs text-gray-600">
-          <span>100</span>
-          <span>1000</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>100</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>1000</span>
         </div>
       </div>
 
       {isComplete && (
-        <p className="text-orange-400 font-semibold text-lg">Reading complete!</p>
+        <p style={{ color: 'var(--text-accent)', fontWeight: 700, fontSize: '1rem' }}>Reading complete!</p>
       )}
     </div>
   )

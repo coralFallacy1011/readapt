@@ -34,7 +34,7 @@ export default function WordDisplay({ word }: WordDisplayProps) {
         style={{
           position: 'absolute',
           right: `${CONTAINER_WIDTH - ORP_OFFSET}px`,
-          color: '#e5e5e5',
+          color: 'var(--text-primary)',
           whiteSpace: 'nowrap'
         }}
       >
@@ -46,7 +46,7 @@ export default function WordDisplay({ word }: WordDisplayProps) {
         style={{
           position: 'absolute',
           left: `${ORP_OFFSET}px`,
-          color: '#f97316', // orange-500
+          color: '#f97316',
           lineHeight: 1
         }}
       >
@@ -57,8 +57,8 @@ export default function WordDisplay({ word }: WordDisplayProps) {
       <span
         style={{
           position: 'absolute',
-          left: `${ORP_OFFSET + 30}px`, // ~1 char width at 3rem monospace
-          color: '#e5e5e5',
+          left: `${ORP_OFFSET + 30}px`,
+          color: 'var(--text-primary)',
           whiteSpace: 'nowrap'
         }}
       >

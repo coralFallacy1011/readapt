@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -194,18 +195,27 @@ function StreakBadge({ streak }: { streak: number }) {
   )
 }
 
-// ── Theme settings ─────────────────────────────────────────────────────────────
+// ── Theme settings + sign out ──────────────────────────────────────────────────
 function ThemeSettings() {
   const { theme, setTheme } = useTheme()
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
   const options: { value: 'dark' | 'light' | 'system'; icon: string; label: string; desc: string }[] = [
     { value: 'light', icon: '☀️', label: 'Light', desc: 'Bright and clean' },
     { value: 'dark', icon: '🌙', label: 'Dark', desc: 'Easy on the eyes' },
     { value: 'system', icon: '💻', label: 'System', desc: 'Follows your OS' },
   ]
+
+  function handleLogout() {
+    logout()
+    navigate('/')
+  }
+
   return (
     <div className="card-3d" style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
       <h2 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.95rem', marginBottom: '1rem' }}>Appearance</h2>
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {options.map(opt => (
           <button
             key={opt.value}
@@ -220,10 +230,40 @@ function ThemeSettings() {
             }}
           >
             <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{opt.icon}</div>
-            <p style={{ color: theme === opt.value ? 'var(--text-accent)' : 'var(--text-primary)', fontWeight: 700, fontSize: '0.85rem' }}>{opt.label}</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{opt.desc}</p>
+            <p style={{ color: theme === opt.value ? 'var(--text-accent)' : 'var(--text-primary)', fontWeight: 700, fontSize: '0.85rem', margin: 0 }}>{opt.label}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', margin: '0.2rem 0 0' }}>{opt.desc}</p>
           </button>
         ))}
+      </div>
+
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.25)',
+            borderRadius: '10px',
+            color: '#ef4444',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            padding: '0.6rem 1.25rem',
+            cursor: 'pointer',
+            transition: 'background 0.2s, border-color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.15)'
+            e.currentTarget.style.borderColor = 'rgba(239,68,68,0.5)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
+            e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'
+          }}
+        >
+          ↩ Sign out
+        </button>
       </div>
     </div>
   )

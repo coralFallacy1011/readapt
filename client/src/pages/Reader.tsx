@@ -50,51 +50,41 @@ export default function Reader() {
     initialWPM: 300
   })
 
-  // Auto-save every 5 seconds while playing
   useEffect(() => {
     if (!book || !rsvp.isPlaying) return
     startTimeRef.current = Date.now()
-
     const interval = setInterval(() => {
       const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
       timeSpentRef.current += elapsed
       startTimeRef.current = Date.now()
-
       const delta = rsvp.wordIndex - lastSavedIndexRef.current
       lastSavedIndexRef.current = rsvp.wordIndex
-
       api.post('/session/update', {
-        bookId: book._id,
-        lastWordIndex: rsvp.wordIndex,
-        currentWPM: rsvp.wpm,
-        timeSpent: timeSpentRef.current,
+        bookId: book._id, lastWordIndex: rsvp.wordIndex,
+        currentWPM: rsvp.wpm, timeSpent: timeSpentRef.current,
         wordsReadDelta: delta > 0 ? delta : 0
-      }).catch(() => {/* silent */})
+      }).catch(() => {})
     }, 5000)
-
     return () => clearInterval(interval)
   }, [book, rsvp.isPlaying, rsvp.wordIndex, rsvp.wpm])
 
-  // Save on completion
   useEffect(() => {
     if (!book || !rsvp.isComplete) return
     const delta = rsvp.wordIndex - lastSavedIndexRef.current
     lastSavedIndexRef.current = rsvp.wordIndex
     api.post('/session/update', {
-      bookId: book._id,
-      lastWordIndex: rsvp.wordIndex,
-      currentWPM: rsvp.wpm,
-      timeSpent: timeSpentRef.current,
+      bookId: book._id, lastWordIndex: rsvp.wordIndex,
+      currentWPM: rsvp.wpm, timeSpent: timeSpentRef.current,
       wordsReadDelta: delta > 0 ? delta : 0
-    }).catch(() => {/* silent */})
+    }).catch(() => {})
   }, [book, rsvp.isComplete, rsvp.wordIndex, rsvp.wpm])
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#6b7280' }}>Loading...</p>
+          <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
         </div>
       </div>
     )
@@ -102,17 +92,16 @@ export default function Reader() {
 
   if (error || !book) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
           <p style={{ color: '#ef4444' }}>{error || 'Book not found'}</p>
-          <Link to="/library" style={{ color: '#f97316', fontSize: '0.875rem' }}>Back to Library</Link>
+          <Link to="/library" style={{ color: 'var(--text-accent)', fontSize: '0.875rem' }}>Back to Library</Link>
         </div>
       </div>
     )
   }
 
-  // Derive which PDF page the current word is on
   function getPageForWordIndex(wordIndex: number, pageWordCounts: number[]): number {
     let cumulative = 0
     for (let i = 0; i < pageWordCounts.length; i++) {
@@ -122,7 +111,6 @@ export default function Reader() {
     return pageWordCounts.length || 1
   }
 
-  // Get the first word index of a given page (1-indexed)
   function getFirstWordOfPage(pageNum: number, pageWordCounts: number[]): number {
     let cumulative = 0
     for (let i = 0; i < pageNum - 1; i++) cumulative += pageWordCounts[i]
@@ -130,9 +118,7 @@ export default function Reader() {
   }
 
   const pageWordCounts = book.pageWordCounts ?? []
-  const currentPage = pageWordCounts.length
-    ? getPageForWordIndex(rsvp.wordIndex, pageWordCounts)
-    : 1
+  const currentPage = pageWordCounts.length ? getPageForWordIndex(rsvp.wordIndex, pageWordCounts) : 1
   const totalPages = pageWordCounts.length || 1
 
   function handlePageJump(page: number) {
@@ -141,32 +127,28 @@ export default function Reader() {
     rsvp.seekTo(wordIdx)
   }
 
-  // Build the authenticated PDF URL
   const pdfUrl = `${import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'}/books/${book._id}/pdf`
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0a0a0a', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-base)', overflow: 'hidden' }}>
       <Navbar />
 
-      {/* 50 / 50 split — fills remaining height */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* ── LEFT 50%: PDF preview ── */}
         <div style={{
           width: '50%',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          borderRight: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          {/* Panel header with page jump */}
+          {/* Panel header */}
           <div style={{
             padding: '0.5rem 1rem',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            borderBottom: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexShrink: 0, background: 'rgba(15,15,15,0.95)', gap: '0.75rem',
+            flexShrink: 0, background: 'var(--bg-surface)', gap: '0.75rem',
           }}>
-            <span style={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Document
             </span>
 
@@ -175,11 +157,11 @@ export default function Reader() {
               <button
                 onClick={() => handlePageJump(currentPage - 1)}
                 disabled={currentPage <= 1}
-                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', borderRadius: '4px', width: '22px', height: '22px', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage <= 1 ? 0.3 : 1 }}
+                style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: '4px', width: '22px', height: '22px', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage <= 1 ? 0.3 : 1 }}
               >‹</button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <span style={{ color: '#6b7280', fontSize: '0.7rem' }}>p.</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>p.</span>
                 <input
                   type="number"
                   min={1}
@@ -187,71 +169,56 @@ export default function Reader() {
                   value={currentPage}
                   onChange={e => handlePageJump(Number(e.target.value))}
                   style={{
-                    width: '40px', background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px',
-                    color: '#f97316', fontSize: '0.75rem', textAlign: 'center',
+                    width: '40px', background: 'var(--bg-input)',
+                    border: '1px solid var(--border)', borderRadius: '4px',
+                    color: 'var(--text-accent)', fontSize: '0.75rem', textAlign: 'center',
                     padding: '2px 4px', outline: 'none',
                   }}
                 />
-                <span style={{ color: '#4b5563', fontSize: '0.7rem' }}>/ {totalPages}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>/ {totalPages}</span>
               </div>
 
               <button
                 onClick={() => handlePageJump(currentPage + 1)}
                 disabled={currentPage >= totalPages}
-                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', borderRadius: '4px', width: '22px', height: '22px', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage >= totalPages ? 0.3 : 1 }}
+                style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: '4px', width: '22px', height: '22px', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: currentPage >= totalPages ? 0.3 : 1 }}
               >›</button>
             </div>
 
-            <span style={{ color: '#4b5563', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
               {book.title}
             </span>
           </div>
 
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <PDFViewer
-              pdfUrl={pdfUrl}
-              currentPage={currentPage}
-              totalPages={totalPages}
-            />
+            <PDFViewer pdfUrl={pdfUrl} currentPage={currentPage} totalPages={totalPages} />
           </div>
         </div>
 
         {/* ── RIGHT 50%: RSVP reader ── */}
-        <div style={{
-          width: '50%',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
+        <div style={{ width: '50%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Panel header */}
           <div style={{
             padding: '0.6rem 1.25rem',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            flexShrink: 0, background: 'rgba(15,15,15,0.9)',
+            borderBottom: '1px solid var(--border)',
+            flexShrink: 0, background: 'var(--bg-surface)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <span style={{ color: '#6b7280', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               Speed Reader
             </span>
-            <span style={{ color: '#4b5563', fontSize: '0.7rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
               {rsvp.wordIndex + 1} / {book.totalWords} words
             </span>
           </div>
 
-          {/* RSVP content — vertically centered */}
+          {/* RSVP content */}
           <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem 1.5rem',
-            gap: '2.5rem',
-            overflow: 'hidden',
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '2rem 1.5rem', gap: '2.5rem', overflow: 'hidden',
+            background: 'var(--bg-base)',
           }}>
-
-            {/* Subtle focus guide line */}
             <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '5%', right: '5%',
@@ -263,7 +230,7 @@ export default function Reader() {
 
             {rsvp.isComplete && (
               <div style={{
-                color: '#f97316', fontWeight: 700, fontSize: '0.95rem',
+                color: 'var(--text-accent)', fontWeight: 700, fontSize: '0.95rem',
                 background: 'rgba(249,115,22,0.1)',
                 border: '1px solid rgba(249,115,22,0.3)',
                 borderRadius: '10px', padding: '0.6rem 1.5rem',
