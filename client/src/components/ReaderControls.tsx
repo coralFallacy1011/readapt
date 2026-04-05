@@ -12,7 +12,7 @@ interface ReaderControlsProps {
 }
 
 export default function ReaderControls({
-  isPlaying, isComplete, wpm, wordIndex, totalWords,
+  isPlaying, isComplete, wpm, wordIndex, totalWords: _totalWords,
   onStart, onPause, onResume, onReset, onWPMChange
 }: ReaderControlsProps) {
   return (
