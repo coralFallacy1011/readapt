@@ -10,10 +10,35 @@ interface Book {
   totalWords: number
   createdAt: string
   isPublic: boolean
+  format?: 'pdf' | 'epub'
+  isAvailableOffline?: boolean
 }
 
-function BookCard({ book, onToggleVisibility }: { book: Book; onToggleVisibility: (id: string) => void }) {
+function FormatBadge({ format }: { format?: string }) {
+  const label = format === 'epub' ? 'EPUB' : 'PDF'
+  const color = format === 'epub' ? '#8b5cf6' : '#3b82f6'
+  return (
+    <span style={{
+      fontSize: '0.65rem',
+      fontWeight: 700,
+      padding: '0.15rem 0.4rem',
+      borderRadius: '4px',
+      background: color,
+      color: '#fff',
+      letterSpacing: '0.04em',
+    }}>
+      {label}
+    </span>
+  )
+}
+
+function BookCard({ book, onToggleVisibility, onCacheOffline }: {
+  book: Book
+  onToggleVisibility: (id: string) => void
+  onCacheOffline: (id: string) => void
+}) {
   const [toggling, setToggling] = useState(false)
+  const [caching, setCaching] = useState(false)
 
   async function handleToggle(e: React.MouseEvent) {
     e.preventDefault()
@@ -25,10 +50,23 @@ function BookCard({ book, onToggleVisibility }: { book: Book; onToggleVisibility
     setToggling(false)
   }
 
+  async function handleCache(e: React.MouseEvent) {
+    e.preventDefault()
+    setCaching(true)
+    try {
+      await api.post(`/offline/cache/${book._id}`)
+      onCacheOffline(book._id)
+    } catch {}
+    setCaching(false)
+  }
+
   return (
     <div className="card-3d" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: '2rem' }}>📄</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ fontSize: '2rem' }}>📄</div>
+          <FormatBadge format={book.format} />
+        </div>
         <button
           onClick={handleToggle}
           disabled={toggling}
@@ -50,16 +88,46 @@ function BookCard({ book, onToggleVisibility }: { book: Book; onToggleVisibility
           {book.isPublic ? '🌍' : '🔒'}
         </button>
       </div>
+
       <h3 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3, margin: 0 }}>{book.title}</h3>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{book.totalWords.toLocaleString()} words</p>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{new Date(book.createdAt).toLocaleDateString()}</p>
-      <Link
-        to={`/reader/${book._id}`}
-        className="btn-accent"
-        style={{ textDecoration: 'none', textAlign: 'center', marginTop: 'auto', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-      >
-        Read →
-      </Link>
+
+      {book.isAvailableOffline && (
+        <span style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: 600 }}>📥 Offline</span>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', flexWrap: 'wrap' }}>
+        <Link
+          to={`/reader/${book._id}`}
+          className="btn-accent"
+          style={{ textDecoration: 'none', textAlign: 'center', flex: 1, fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+        >
+          Read →
+        </Link>
+        {!book.isAvailableOffline && (
+          <button
+            onClick={handleCache}
+            disabled={caching}
+            title="Download for offline reading"
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              cursor: caching ? 'not-allowed' : 'pointer',
+              fontSize: '0.78rem',
+              padding: '0.5rem 0.6rem',
+              color: 'var(--text-secondary)',
+              opacity: caching ? 0.5 : 1,
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            {caching ? '⏳' : '📥'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -68,10 +136,16 @@ export default function Library() {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [uploadSuccess, setUploadSuccess] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const [uploadingEpub, setUploadingEpub] = useState(false)
+  const [uploadEpubError, setUploadEpubError] = useState('')
+  const [uploadEpubSuccess, setUploadEpubSuccess] = useState('')
+  const epubRef = useRef<HTMLInputElement>(null)
 
   function fetchBooks() {
     setLoading(true)
@@ -106,6 +180,33 @@ export default function Library() {
     }
   }
 
+  async function handleEpubUpload(e: FormEvent) {
+    e.preventDefault()
+    const file = epubRef.current?.files?.[0]
+    if (!file) return
+    if (!file.name.endsWith('.epub')) { setUploadEpubError('Only EPUB files are accepted'); return }
+    setUploadEpubError('')
+    setUploadEpubSuccess('')
+    setUploadingEpub(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await api.post('/books/upload/epub', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      if (epubRef.current) epubRef.current.value = ''
+      setUploadEpubSuccess('EPUB uploaded successfully!')
+      fetchBooks()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setUploadEpubError(msg ?? 'Upload failed')
+    } finally {
+      setUploadingEpub(false)
+    }
+  }
+
+  function handleCacheOffline(id: string) {
+    setBooks(prev => prev.map(b => b._id === id ? { ...b, isAvailableOffline: true } : b))
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
       <Navbar />
@@ -116,24 +217,47 @@ export default function Library() {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Your personal reading collection</p>
         </div>
 
-        {/* Upload card */}
-        <div className="card-3d" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-          <h2 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '1rem' }}>Upload a PDF</h2>
-          <form onSubmit={handleUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '200px' }}>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf"
-                style={{ display: 'block', width: '100%', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              />
-              {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadError}</p>}
-              {uploadSuccess && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadSuccess}</p>}
-            </div>
-            <button type="submit" disabled={uploading} className="btn-accent" style={{ whiteSpace: 'nowrap' }}>
-              {uploading ? 'Uploading...' : 'Upload PDF'}
-            </button>
-          </form>
+        {/* Upload cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          {/* PDF upload */}
+          <div className="card-3d" style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '1rem' }}>Upload a PDF</h2>
+            <form onSubmit={handleUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '160px' }}>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".pdf"
+                  style={{ display: 'block', width: '100%', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                />
+                {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadError}</p>}
+                {uploadSuccess && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadSuccess}</p>}
+              </div>
+              <button type="submit" disabled={uploading} className="btn-accent" style={{ whiteSpace: 'nowrap' }}>
+                {uploading ? 'Uploading...' : 'Upload PDF'}
+              </button>
+            </form>
+          </div>
+
+          {/* EPUB upload */}
+          <div className="card-3d" style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '1rem' }}>Upload an EPUB</h2>
+            <form onSubmit={handleEpubUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '160px' }}>
+                <input
+                  ref={epubRef}
+                  type="file"
+                  accept=".epub"
+                  style={{ display: 'block', width: '100%', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                />
+                {uploadEpubError && <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadEpubError}</p>}
+                {uploadEpubSuccess && <p style={{ color: '#22c55e', fontSize: '0.78rem', marginTop: '0.4rem' }}>{uploadEpubSuccess}</p>}
+              </div>
+              <button type="submit" disabled={uploadingEpub} className="btn-accent" style={{ whiteSpace: 'nowrap', background: '#8b5cf6' }}>
+                {uploadingEpub ? 'Uploading...' : 'Upload EPUB'}
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Book grid */}
@@ -147,13 +271,20 @@ export default function Library() {
           <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
             <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</p>
             <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No books yet</p>
-            <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Upload a PDF to get started</p>
+            <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Upload a PDF or EPUB to get started</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.25rem' }}>
-            {books.map(book => <BookCard key={book._id} book={book} onToggleVisibility={(id) => {
-              setBooks(prev => prev.map(b => b._id === id ? { ...b, isPublic: !b.isPublic } : b))
-            }} />)}
+            {books.map(book => (
+              <BookCard
+                key={book._id}
+                book={book}
+                onToggleVisibility={(id) => {
+                  setBooks(prev => prev.map(b => b._id === id ? { ...b, isPublic: !b.isPublic } : b))
+                }}
+                onCacheOffline={handleCacheOffline}
+              />
+            ))}
           </div>
         )}
       </main>

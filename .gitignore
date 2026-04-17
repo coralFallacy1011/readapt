@@ -1,6 +1,10 @@
 # Editor / IDE
 .vscode/
-.kiro/
+
+# Kiro IDE — keep specs, exclude settings/hooks
+.kiro/settings/
+.kiro/hooks/
+.kiro
 
 # Dependencies
 node_modules/
@@ -11,6 +15,25 @@ dist/
 # Environment variables
 .env
 *.env.local
+
+# Test coverage reports
+coverage/
+.nyc_output/
+
+# Internal implementation notes / auto-generated docs
+server/src/config/ML_IMPLEMENTATION_SUMMARY.md
+server/src/config/ML_SETUP.md
+server/src/config/redis.md
+server/src/controllers/GAMIFICATION_CONTROLLER_IMPLEMENTATION.md
+server/src/controllers/ML_CONTROLLER_IMPLEMENTATION.md
+server/src/services/gamification/README.md
+server/src/services/ml/ORP_OPTIMIZER_README.md
+server/src/services/ml/README.md
+server/src/services/storage/QUICK_START.md
+server/src/services/storage/README.md
+server/src/websocket-implementation-summary.md
+server/src/websocket-usage.md
+server/TASK_9.9_IMPLEMENTATION.md
 
 # Logs
 *.log

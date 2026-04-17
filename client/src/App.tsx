@@ -10,6 +10,11 @@ import Library from './pages/Library'
 import Reader from './pages/Reader'
 import Profile from './pages/Profile'
 import Explore from './pages/Explore'
+import Goals from './pages/Goals'
+import Settings from './pages/Settings'
+import Social from './pages/Social'
+import Challenges from './pages/Challenges'
+import Analytics from './pages/Analytics'
 
 export default function App() {
   return (
@@ -26,6 +31,11 @@ export default function App() {
               <Route path="/reader/:bookId" element={<Reader />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/explore" element={<Explore />} />
+              <Route path="/goals" element={<Goals />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/social" element={<Social />} />
+              <Route path="/challenges" element={<Challenges />} />
+              <Route path="/analytics" element={<Analytics />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

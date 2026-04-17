@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import WordDisplay from '../components/WordDisplay'
 import ReaderControls from '../components/ReaderControls'
 import PDFViewer from '../components/PDFViewer'
+import SpeedRecommendationModal from '../components/SpeedRecommendationModal'
+import QuizModal from '../components/QuizModal'
 import { useRSVP } from '../hooks/useRSVP'
 import api from '../api'
 
@@ -15,6 +17,24 @@ interface Book {
   pageWordCounts?: number[]
 }
 
+interface SpeedRecommendation {
+  _id: string
+  recommendedWPM: number
+  rationale: string
+  confidence: number
+}
+
+interface Quiz {
+  _id: string
+  questions: {
+    question: string
+    options: string[]
+    correctIndex: number
+    category: string
+    explanation: string
+  }[]
+}
+
 export default function Reader() {
   const { bookId } = useParams<{ bookId: string }>()
   const [book, setBook] = useState<Book | null>(null)
@@ -24,6 +44,19 @@ export default function Reader() {
   const startTimeRef = useRef<number>(Date.now())
   const timeSpentRef = useRef<number>(0)
   const lastSavedIndexRef = useRef<number>(0)
+
+  // Speed recommendation state
+  const [speedRec, setSpeedRec] = useState<SpeedRecommendation | null>(null)
+  const [speedRecOpen, setSpeedRecOpen] = useState(false)
+  const activeReadingSecondsRef = useRef(0)
+  const lastSpeedCheckRef = useRef(0)
+
+  // Bookmark state
+  const [bookmarkMsg, setBookmarkMsg] = useState(false)
+
+  // Quiz state
+  const [quiz, setQuiz] = useState<Quiz | null>(null)
+  const [quizOpen, setQuizOpen] = useState(false)
 
   useEffect(() => {
     if (!bookId) return
@@ -78,6 +111,75 @@ export default function Reader() {
       wordsReadDelta: delta > 0 ? delta : 0
     }).catch(() => {})
   }, [book, rsvp.isComplete, rsvp.wordIndex, rsvp.wpm])
+
+  // Speed recommendation: check every 5 minutes of active reading
+  useEffect(() => {
+    if (!book || !rsvp.isPlaying) return
+    const interval = setInterval(() => {
+      activeReadingSecondsRef.current += 5
+      if (activeReadingSecondsRef.current - lastSpeedCheckRef.current >= 300) {
+        lastSpeedCheckRef.current = activeReadingSecondsRef.current
+        api.get(`/ml/speed-recommendation?bookId=${book._id}`)
+          .then(res => {
+            const rec = res.data
+            if (rec && rec.recommendedWPM) {
+              setSpeedRec(rec)
+              setSpeedRecOpen(true)
+            }
+          })
+          .catch(() => {})
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [book, rsvp.isPlaying])
+
+  const handleSpeedRecAccept = useCallback((wpm: number) => {
+    if (!speedRec) return
+    api.post('/ml/speed-recommendation/respond', { recommendationId: speedRec._id, accepted: true }).catch(() => {})
+    rsvp.setWPM(wpm)
+    setSpeedRecOpen(false)
+    setSpeedRec(null)
+  }, [speedRec, rsvp])
+
+  const handleSpeedRecReject = useCallback(() => {
+    if (!speedRec) return
+    api.post('/ml/speed-recommendation/respond', { recommendationId: speedRec._id, accepted: false }).catch(() => {})
+    setSpeedRecOpen(false)
+    setSpeedRec(null)
+  }, [speedRec])
+
+  const handleBookmark = useCallback(() => {
+    if (!book) return
+    api.post('/bookmarks', {
+      bookId: book._id,
+      type: 'bookmark',
+      wordIndex: rsvp.wordIndex,
+      contextText: rsvp.currentWord || ''
+    }).catch(() => {})
+    setBookmarkMsg(true)
+    setTimeout(() => setBookmarkMsg(false), 2000)
+  }, [book, rsvp.wordIndex, rsvp.currentWord])
+
+  const handleTakeQuiz = useCallback(async () => {
+    if (!book) return
+    try {
+      const res = await api.post('/quizzes/generate', {
+        bookId: book._id,
+        startWordIndex: 0,
+        endWordIndex: rsvp.wordIndex
+      })
+      setQuiz(res.data)
+      setQuizOpen(true)
+    } catch {
+      // ignore
+    }
+  }, [book, rsvp.wordIndex])
+
+  const handleQuizSubmit = useCallback(async (answers: number[]) => {
+    if (!quiz) throw new Error('No quiz')
+    const res = await api.post(`/quizzes/${quiz._id}/submit`, { answers })
+    return res.data
+  }, [quiz])
 
   if (loading) {
     return (
@@ -207,9 +309,19 @@ export default function Reader() {
             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               Speed Reader
             </span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-              {rsvp.wordIndex + 1} / {book.totalWords} words
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {bookmarkMsg && (
+                <span style={{ color: '#22c55e', fontSize: '0.7rem', fontWeight: 600 }}>Bookmarked!</span>
+              )}
+              <button
+                onClick={handleBookmark}
+                title="Bookmark current position"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '2px 4px', borderRadius: '4px', color: 'var(--text-muted)' }}
+              >🔖</button>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                {rsvp.wordIndex + 1} / {book.totalWords} words
+              </span>
+            </div>
           </div>
 
           {/* RSVP content */}
@@ -229,13 +341,25 @@ export default function Reader() {
             </div>
 
             {rsvp.isComplete && (
-              <div style={{
-                color: 'var(--text-accent)', fontWeight: 700, fontSize: '0.95rem',
-                background: 'rgba(249,115,22,0.1)',
-                border: '1px solid rgba(249,115,22,0.3)',
-                borderRadius: '10px', padding: '0.6rem 1.5rem',
-              }}>
-                ✓ Reading complete!
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  color: 'var(--text-accent)', fontWeight: 700, fontSize: '0.95rem',
+                  background: 'rgba(249,115,22,0.1)',
+                  border: '1px solid rgba(249,115,22,0.3)',
+                  borderRadius: '10px', padding: '0.6rem 1.5rem',
+                }}>
+                  ✓ Reading complete!
+                </div>
+                <button
+                  onClick={handleTakeQuiz}
+                  style={{
+                    background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)',
+                    color: 'var(--text-accent)', borderRadius: '8px', padding: '0.45rem 1.25rem',
+                    fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Take Quiz
+                </button>
               </div>
             )}
 
@@ -254,6 +378,27 @@ export default function Reader() {
           </div>
         </div>
       </div>
+
+      {/* Speed Recommendation Modal */}
+      {speedRec && (
+        <SpeedRecommendationModal
+          isOpen={speedRecOpen}
+          currentWPM={rsvp.wpm}
+          recommendedWPM={speedRec.recommendedWPM}
+          rationale={speedRec.rationale ?? ''}
+          confidence={speedRec.confidence ?? 0.8}
+          onAccept={handleSpeedRecAccept}
+          onReject={handleSpeedRecReject}
+        />
+      )}
+
+      {/* Quiz Modal */}
+      <QuizModal
+        isOpen={quizOpen}
+        quiz={quiz}
+        onSubmit={handleQuizSubmit}
+        onClose={() => { setQuizOpen(false); setQuiz(null) }}
+      />
     </div>
   )
 }

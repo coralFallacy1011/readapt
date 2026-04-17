@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import api from '../api'
+import ReadingDNAChart from '../components/ReadingDNAChart'
+import BadgeDisplay from '../components/BadgeDisplay'
 
 interface ProfileData {
   heatmap: Record<string, number>
   streak: number
   totalWordsRead: number
   booksUploaded: number
+}
+
+interface ReadingDNA {
+  wpmHistory: Array<{ date: string; wpm: number }>
+  activityHeatmap: number[][]
+  genreAffinity: Array<{ genre: string; wordsRead: number; percentage: number }>
 }
 
 // ── Heatmap helpers ────────────────────────────────────────────────────────────
@@ -236,7 +244,21 @@ function ThemeSettings() {
         ))}
       </div>
 
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <Link
+          to="/settings"
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          🔒 Privacy settings
+        </Link>
         <button
           onClick={handleLogout}
           style={{
@@ -274,12 +296,26 @@ export default function Profile() {
   const { user } = useAuth()
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [dna, setDna] = useState<ReadingDNA | null>(null)
+  const [badges, setBadges] = useState<string[]>([])
 
   useEffect(() => {
     api.get('/analytics/profile')
       .then(res => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    api.get('/ml/reading-dna')
+      .then(res => setDna(res.data))
+      .catch(() => {})
+
+    api.get('/gamification/badges')
+      .then(res => {
+        const raw = res.data
+        const list: string[] = Array.isArray(raw) ? raw : raw.badges ?? raw.earnedBadges ?? []
+        setBadges(list)
+      })
+      .catch(() => {})
   }, [])
 
   const initials = user?.name
@@ -324,6 +360,22 @@ export default function Profile() {
                 Reading activity — last 365 days
               </h2>
               <Heatmap heatmap={data.heatmap} />
+            </div>
+
+            {/* Reading DNA */}
+            {dna && (
+              <div className="mb-6">
+                <ReadingDNAChart
+                  wpmHistory={dna.wpmHistory}
+                  activityHeatmap={dna.activityHeatmap}
+                  genreAffinity={dna.genreAffinity}
+                />
+              </div>
+            )}
+
+            {/* Badge showcase */}
+            <div className="mb-6">
+              <BadgeDisplay earnedBadges={badges} />
             </div>
           </>
         ) : (
