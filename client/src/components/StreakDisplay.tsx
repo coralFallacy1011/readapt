@@ -60,7 +60,7 @@ export default function StreakDisplay({
 
       {/* 7-day calendar */}
       <div className="flex gap-2 mb-5">
-        {days.map((date, i) => {
+        {days.map((date) => {
           const isActive = activeDays.has(date)
           const isToday = date === today
           return (

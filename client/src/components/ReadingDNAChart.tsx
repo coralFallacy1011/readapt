@@ -31,7 +31,7 @@ function WPMLineChart({ data }: { data: Array<{ date: string; wpm: number }> }) 
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-      {data.map((d, i) => {
+      {data.map((_d, i) => {
         const [x, y] = points[i].split(',').map(Number)
         return <circle key={i} cx={x} cy={y} r="3" fill="#f97316" />
       })}
