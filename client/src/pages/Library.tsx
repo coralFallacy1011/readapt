@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import api from '../api'
 import { toggleBookVisibility } from '../api/social'
+import EpubPreview from '../components/EpubPreview'
 
 interface Book {
   _id: string
@@ -64,7 +65,10 @@ function BookCard({ book, onToggleVisibility, onCacheOffline }: {
     <div className="card-3d" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <div style={{ fontSize: '2rem' }}>📄</div>
+          {book.format === 'epub'
+            ? <EpubPreview bookId={book._id} />
+            : <div style={{ fontSize: '2rem' }}>📄</div>
+          }
           <FormatBadge format={book.format} />
         </div>
         <button

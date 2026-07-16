@@ -102,6 +102,103 @@ function extractChapterTitle(html: string, fallback: string): string {
 }
 
 /**
+ * Truncate a string at the last word boundary (space) at or before `maxChars`.
+ * Returns the input unchanged if its length does not exceed `maxChars`.
+ *
+ * Requirements: 3.4, 5.3
+ */
+export function truncateAtWordBoundary(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text
+
+  // Find the last space at or before maxChars
+  const slice = text.slice(0, maxChars)
+  const lastSpace = slice.lastIndexOf(' ')
+
+  // If no space found, hard-cut at maxChars
+  if (lastSpace === -1) return slice
+
+  return text.slice(0, lastSpace)
+}
+
+/**
+ * Determine whether a chapter is a navigation, table-of-contents, or cover chapter
+ * that should be skipped when selecting preview content.
+ *
+ * Returns true when the chapter title or plain-text content matches common nav/toc/cover
+ * heuristics (case-insensitive).
+ *
+ * Requirements: 4.1
+ */
+export function isNavigationChapter(title: string, text: string): boolean {
+  const NAV_PATTERNS = [
+    /\btable\s+of\s+contents?\b/i,
+    /\btoc\b/i,
+    /\bnavigation\b/i,
+    /\bnav\b/i,
+    /\bcover\b/i,
+    /\btitle\s*page\b/i,
+    /\bcopyright\b/i,
+    /\bdedication\b/i,
+    /\bcontents?\b/i,
+  ]
+
+  const titleLower = title.toLowerCase().trim()
+  const textLower = text.toLowerCase().trim()
+
+  // Check title first — a title match is always decisive
+  for (const pattern of NAV_PATTERNS) {
+    if (pattern.test(titleLower)) return true
+  }
+
+  // For content: only flag as navigation if the text is short (< 300 chars) AND matches
+  // a nav pattern, to avoid false-positives in chapters that merely mention these words.
+  if (textLower.length < 300) {
+    for (const pattern of NAV_PATTERNS) {
+      if (pattern.test(textLower)) return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Extract a plain-text preview from EPUB chapters.
+ * - Skips nav/toc/cover chapters (via isNavigationChapter)
+ * - Skips chapters with fewer than 50 plain-text characters
+ * - Returns the first 500 words of the first eligible chapter
+ * - Strips any residual HTML tags
+ * - Normalizes whitespace (collapses runs to a single space)
+ * - Truncates at a word boundary to a maximum of 2000 characters
+ * - Returns empty string if no eligible chapter is found
+ *
+ * Requirements: 1.1, 4.1, 4.2, 4.3, 4.4, 5.3
+ */
+export function generatePreview(chapters: EPUBChapter[]): string {
+  for (const ch of chapters) {
+    // Skip navigation/toc/cover chapters
+    if (isNavigationChapter(ch.title, ch.text)) continue
+
+    // Strip any residual HTML tags
+    let text = ch.text.replace(/<[^>]+>/g, ' ')
+
+    // Normalize whitespace
+    text = text.replace(/\s+/g, ' ').trim()
+
+    // Skip if fewer than 50 characters
+    if (text.length < 50) continue
+
+    // Extract first 500 words
+    const words = text.split(' ')
+    const first500 = words.slice(0, 500).join(' ')
+
+    // Truncate to max 2000 characters at a word boundary
+    return truncateAtWordBoundary(first500, 2000)
+  }
+
+  return ''
+}
+
+/**
  * Extract EPUB content from a Buffer.
  * Requirements: 5.1, 5.2
  */

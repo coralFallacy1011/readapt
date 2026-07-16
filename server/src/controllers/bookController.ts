@@ -4,7 +4,7 @@ import { AuthRequest } from '../middleware/auth'
 import { extractTextWithPageCounts } from '../utils/pdfExtractor'
 import { cleanText } from '../utils/textCleaner'
 import Book from '../models/Book'
-import { extractEPUB } from '../services/epub/epubProcessor'
+import { extractEPUB, generatePreview } from '../services/epub/epubProcessor'
 
 // Multer: memory storage, PDF only, max 20MB
 export const upload = multer({
@@ -159,6 +159,7 @@ export async function uploadEPUB(req: AuthRequest, res: Response): Promise<void>
 
   try {
     const epubData = await extractEPUB(req.file.buffer)
+    const previewContent = generatePreview(epubData.chapters)
 
     // Flatten all chapter text into a word array
     const allText = epubData.chapters.map(c => c.text).join(' ')
@@ -195,6 +196,7 @@ export async function uploadEPUB(req: AuthRequest, res: Response): Promise<void>
       averageWordLength,
       complexityScore,
       chapters,
+      previewContent,
       isCompleted: false,
       isAvailableOffline: false,
     })
@@ -224,6 +226,23 @@ export async function uploadEPUB(req: AuthRequest, res: Response): Promise<void>
     } else {
       res.status(500).json({ error: 'Internal server error' })
     }
+  }
+}
+
+// GET /api/books/:id/preview — Requirements 2.1–2.6
+export async function getPreview(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const book = await Book.findById(req.params.id).select('userId previewContent format')
+    if (!book) { res.status(404).json({ error: 'Not found' }); return }
+    if (book.userId.toString() !== req.user!.id) {
+      res.status(403).json({ error: 'Forbidden' }); return
+    }
+    if (book.format === 'pdf') {
+      res.status(400).json({ error: 'PDF books do not use this endpoint' }); return
+    }
+    res.json({ previewContent: book.previewContent ?? '' })
+  } catch {
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 

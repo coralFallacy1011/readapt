@@ -10,6 +10,7 @@ import {
   uploadEpub,
   uploadEPUB,
   getChapters,
+  getPreview,
 } from '../controllers/bookController'
 
 const router = Router()
@@ -19,6 +20,7 @@ router.use(authMiddleware)
 router.post('/upload', upload.single('file'), uploadBook)
 router.post('/upload/epub', uploadEpub.single('file'), uploadEPUB)
 router.get('/', getAll)
+router.get('/:id/preview', getPreview)
 router.get('/:id', getById)
 router.get('/:id/pdf', getPDF)
 router.get('/:id/chapters', getChapters)

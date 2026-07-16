@@ -36,6 +36,9 @@ export interface IBook extends Document {
   // Offline (Requirements 15.3)
   isAvailableOffline: boolean
   offlineCacheSize?: number
+
+  // EPUB preview (Requirements 1.2, 5.3)
+  previewContent?: string  // Plain-text EPUB preview, max 2000 chars. Empty string if unavailable.
 }
 
 const BookSchema = new Schema<IBook>(
@@ -73,7 +76,10 @@ const BookSchema = new Schema<IBook>(
     
     // Offline
     isAvailableOffline: { type: Boolean, default: false },
-    offlineCacheSize: { type: Number }
+    offlineCacheSize: { type: Number },
+
+    // EPUB preview
+    previewContent: { type: String, default: '' }
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 )
